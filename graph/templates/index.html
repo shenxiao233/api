@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Statistics</title>
+    <!-- 引入 ECharts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <style>
+         .box {
+            border: 1px solid #ccc; /* 添加带阴影的边框 */
+            border-radius: 10px; /* 圆角边框 */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* 添加阴影效果 */
+            margin: 20px 20px; /* 外边距，上下各20px */
+            margin-bottom: 20px; /* 底部间距 */
+            width: calc(100% - 40px); /* 设置宽度为 container 宽度 */
+        }
+         .data_wrapper{
+             border: 1px solid #ccc; /* 添加带阴影的边框 */
+            border-radius: 10px; /* 圆角边框 */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* 添加阴影效果 */
+            margin: 20px 20px; /* 外边距，上下各20px */
+            margin-bottom: 20px; /* 底部间距 */
+            width: calc(100% - 40px); /* 设置宽度为 container 宽度 */
+           display: flex;
+           justify-content: space-between;
+
+         }
+        .container {
+            border: 1px solid #ccc; /* 添加带阴影的边框 */
+            border-radius: 10px; /* 圆角边框 */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* 添加阴影效果 */
+            margin: 20px 20px; /* 外边距，上下各20px */
+        }
+
+        .chart-container {
+            display: flex; /* 使用 flexbox 布局 */
+            border-radius: 5px; /* 添加边框圆角 */
+            overflow: hidden; /* 隐藏内容溢出 */
+        }
+
+        .chart {
+            flex: 1; /* 设置图表的占比 */
+            margin-right: 20px; /* 设置图表之间的间距 */
+            border-right: 1px solid lightgray; /* 添加右侧浅灰色实线边框 */
+            white-space: nowrap; /* 不换行 */
+            text-overflow: ellipsis; /* 文本溢出显示省略号 */
+            margin-bottom: 30px;
+        }
+
+        .chart:last-child {
+            border-right: none; /* 移除最后一个图表的右侧边框 */
+        }
+
+        #total_stats {
+            margin-top: 35px; /* 外边距，上下各20px */
+            text-align: center; /* 文字居中显示 */
+            font-size: 18px; /* 字体大小 */
+            margin-bottom: 35px; /* 底部间距 */
+        }
+
+        .input-box {
+            border: 1px solid #ccc; /* 添加边框 */
+            border-radius: 5px; /* 圆角边框 */
+            display: inline-flex; /* 内联弹性布局 */
+            align-items: center; /* 垂直居中 */
+            margin: 5px;
+            padding: 3px;
+        }
+
+         input[type="text"] {
+            width: 200px; /* 输入框宽度 */
+            padding: 5px; /* 输入框内边距 */
+            border: none; /* 移除默认边框 */
+            border-radius: 5px; /* 圆角边框 */
+            margin-right: 10px; /* 右侧间距 */
+        }
+         /* 聚焦时的样式 */
+        input[type="text"]:focus {
+            outline: none; /* 移除聚焦时的外边框 */
+            border-color: transparent; /* 聚焦时边框透明 */
+        }
+        .clear-btn {
+            cursor: pointer; /* 光标样式为手型 */
+        }
+
+
+        .search-results {
+            position: absolute;
+            top: calc(100% + 5px); /* 相对于输入框底部偏移 */
+            left: 0;
+            width: calc(100% - 2px); /* 宽度与输入框一致 */
+            background-color: #fff; /* 背景色 */
+            border: 1px solid #ccc; /* 边框 */
+            border-radius: 5px; /* 圆角边框 */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+            z-index: 1; /* 确保在其他元素之上 */
+            max-height: 100px; /* 最多显示10行 */
+            overflow-y: auto; /* 添加垂直滚动条 */
+        }
+
+        .data_item{
+           padding: 10px;
+            display: grid;
+          place-items: center;
+
+        }
+        .data-box{
+            margin: 3px;
+        }
+        .graph{
+             display: flex; /* 使用 flexbox 布局 */
+        }
+        .data_wrapper{
+
+        }
+        .data_uper{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+
+    </style>
+</head>
+
+<body>
+
+        <div class="container">
+            <div id="total_stats">总计浏览时长： <span id="total_duration"></span>，总计浏览次数： <span id="total_visits"></span></div>
+            <div class="chart-container">
+                <div id="bar_chart" class="chart" style="width: 600px; height: 400px;"></div>
+                <div id="pie_chart" class="chart" style="width: 600px; height: 400px;"></div>
+                <div id="pie_chart_2" class="chart" style="width: 600px; height: 400px;"></div>
+            </div>
+        </div>
+
+<div class="box" style="position: relative;">
+    <div class="input-box">
+        <input type="text" id="inputData" placeholder="输入网站...">
+        <span class="clear-btn" onclick="clearInput()"><i class="fas fa-times-circle"></i></span>
+    </div>
+    <!-- 显示搜索结果的元素 -->
+    <div id="searchResults" class="search-results"></div>
+</div>
+
+        <div class="data_wrapper">
+
+     <div class = "data_uper" >
+         <div class ="data_mid">
+    <div class="data_item">
+        <div class="data-box"><strong>网站名称</strong></div>
+        <div class="data-box"></div><span id="site_name"></span></div>
+
+
+    <div class="data_item">
+        <div class="data-box"><strong>总访问量</strong></div>
+        <div class="data-box"><span id="total_visit"></span></div>
+    </div>
+
+    <div class="data_item">
+        <div class="data-box"><strong>总时长</strong> </div>
+             <div><span id="total_durations"></span></div>
+    </div>
+
+    <div class="data_item">
+        <div class="data-box"><strong>活跃天数</strong></div>
+        <div><span id="active_days"></span></div>
+    </div>
+             </div>
+         </div>
+
+            <div class="graph">
+            <div id="chartContainer1" style="width: 600px; height: 400px;"></div>
+            <div id="chartContainer2" style="width: 600px; height: 400px;"></div>
+                </div>
+
+    </div>
+
+
+
+    <script>
+      var dataWrapper = document.querySelector('.data_wrapper');
+      dataWrapper.style.opacity = 0;
+         // 获取网站名称数据
+        var websiteNames = {{ website_names | safe }};
+
+
+       // 监听输入框的键盘按键释放事件
+        document.getElementById('inputData').addEventListener('keyup', function() {
+            // 获取输入框的值
+            var inputValue = this.value.trim().toLowerCase();
+
+            // 获取匹配的网站名称
+            var matchedWebsites = [];
+            if (inputValue !== '') {
+                matchedWebsites = websiteNames.filter(function(website) {
+                    return website.toLowerCase().includes(inputValue);
+                });
+            } else {
+                // 如果输入框为空，则立即清空搜索结果并隐藏下拉菜单
+                clearSearchResults();
+                return;
+            }
+
+            // 显示匹配的结果
+            showSearchResults(matchedWebsites);
+        });
+
+        // 清空搜索结果并隐藏下拉菜单
+        function clearSearchResults() {
+            var resultsContainer = document.getElementById('searchResults');
+            resultsContainer.innerHTML = '';
+        }
+
+
+
+        // 显示搜索结果
+        function showSearchResults(results) {
+            var resultsContainer = document.getElementById('searchResults');
+            // 清空搜索结果
+            resultsContainer.innerHTML = '';
+            // 如果有匹配的结果，则显示在下拉菜单中
+            if (results.length > 0) {
+                results.forEach(function(website) {
+                    var resultItem = document.createElement('div');
+                    resultItem.textContent = website;
+                    resultItem.classList.add('search-result-item');
+                    // 添加点击事件处理程序，当用户点击结果时，将其填充到输入框中
+                    resultItem.addEventListener('click', function() {
+                        document.getElementById('inputData').value = website;
+                        resultsContainer.innerHTML = ''; // 清空搜索结果
+                    });
+                    resultsContainer.appendChild(resultItem);
+                });
+            } else {
+                // 如果没有匹配的结果，则显示空消息
+                resultsContainer.textContent = 'No matching websites found.';
+            }
+        }
+
+        // 清空输入框并隐藏搜索结果
+        function clearInput() {
+            var inputElement = document.getElementById('inputData');
+            inputElement.value = '';
+            clearSearchResults();
+        }
+
+
+        function formatTime(seconds) {
+            var hours = Math.floor(seconds / 3600);
+            var minutes = Math.floor((seconds % 3600) / 60);
+            var remainingSeconds = seconds % 60;
+
+            var formattedTime = '';
+            if (hours > 0) {
+                formattedTime += hours + 'h';
+            }
+            if (minutes > 0) {
+                formattedTime += minutes + 'm';
+            }
+            if (remainingSeconds > 0 || formattedTime === '') {
+                formattedTime += remainingSeconds + 's';
+            }
+
+            return formattedTime;
+        }
+
+        // 绘制折线图函数
+        function drawLineChart(containerId, titleText, xAxisData, seriesData) {
+            var chart = echarts.init(document.getElementById(containerId));
+            var option = {
+                title: {
+                    text: titleText,
+                    left: 'center' // 让标题居中
+                },
+                xAxis: {
+                    type: 'category',
+                    data: xAxisData
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [{
+                    data: seriesData,
+                    type: 'line'
+                }]
+            };
+            chart.setOption(option);
+        }
+
+
+        // 使用 Ajax 发送数据到服务器
+        function sendDataToServer(data) {
+            // 创建 XMLHttpRequest 对象
+            var xhr = new XMLHttpRequest();
+
+            // 配置 POST 请求
+            xhr.open('POST', '/process_input', true);
+
+            // 设置请求头
+            xhr.setRequestHeader('Content-Type', 'application/json');
+
+            // 处理响应
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    // 解析返回的数据
+                    var data = JSON.parse(xhr.responseText);
+                    document.getElementById('site_name').textContent =  data.site_name;
+                    document.getElementById('total_visit').textContent =  data.total_visit;
+                    document.getElementById('total_durations').textContent = formatTime(data.total_durations);
+                    document.getElementById('active_days').textContent =  data.active_days;
+                    // 假设data.dailyData是一个字典对象
+                    var responseData = JSON.parse(xhr.responseText);
+                    var daily_data = responseData.daily_data
+                    var xAxisData = Object.keys(daily_data).sort(); // 对键进行排序
+                    var visitsData = Object.values(daily_data).map(function(item) {
+                        return item.visits;
+                    });
+                    var durationData = Object.values(daily_data).map(function(item) {
+                        return item.duration;
+                    });
+                    // 调用绘制折线图函数两次
+                    drawLineChart('chartContainer1', '浏览次数', xAxisData, visitsData);
+                    drawLineChart('chartContainer2', '浏览时长(s)', xAxisData, durationData);
+
+                } else {
+                    console.log('Error getting data.');
+                }
+            };
+            // 发送数据
+            xhr.send(JSON.stringify({inputData: data}));
+    }
+
+
+        // 选择下拉菜单选项时调用 sendDataToServer 函数
+        document.getElementById('searchResults').addEventListener('click', function(event) {
+            var selectedOption = event.target.textContent;
+            sendDataToServer(selectedOption);
+            dataWrapper.style.opacity = 1;
+
+        });
+
+        // 计算总计浏览时长和总计浏览次数
+        var totalDuration = 0;
+        var totalVisits = 0;
+        {% for url, (total_duration, total_visits) in top_five %}
+            totalDuration += {{ total_duration }};
+            totalVisits += {{ total_visits }};
+        {% endfor %}
+
+        // 将总计浏览时长转换为几小时几分几秒的格式
+        var hours = Math.floor(totalDuration / 3600);
+        var minutes = Math.floor((totalDuration % 3600) / 60);
+        var seconds = totalDuration % 60;
+
+        // 显示总计浏览时长和总计浏览次数
+        document.getElementById('total_duration').textContent = hours + ' 小时 ' + minutes + ' 分钟 ' + seconds + ' 秒';
+        document.getElementById('total_visits').textContent = totalVisits;
+
+
+
+         // 初始化柱形图
+        var barChart = echarts.init(document.getElementById('bar_chart'));
+        var barOption = {
+            title: {
+                text: '最长浏览TOP5',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                }
+            },
+            yAxis: {
+                type: 'category',
+                 axisLabel: {
+                     show: false // 隐藏 y 轴标签
+                 },
+                  axisLine: {
+                     show: false // 隐藏 y 轴线条
+                  },
+                    axisTick: {
+                       show: false // 隐藏 y 轴刻度
+                  },
+                data: [
+                    {% for url, (total_duration, total_visits) in top_five %}
+                    '{{ url }}',
+                    {% endfor %}
+                      ]
+                },
+                xAxis: {
+                type: 'value',
+                axisLabel: {
+                    show: false // 隐藏 x 轴标签
+                },
+            },
+            series: [{
+                data: [
+                    {% for url, (total_duration, total_visits) in top_five %}
+                    { value: {{ total_duration | tojson }}, name: '{{ url }}' },
+                    {% endfor %}
+                ],
+                type: 'bar',
+                label: {
+                    show: true,
+                    position: 'right',
+                    formatter: '{b}' // 设置标签为网站名
+                }
+            }]
+        };
+        barChart.setOption(barOption);
+        // 初始化饼图
+          var pieChart = echarts.init(document.getElementById('pie_chart'));
+
+        // 计算前五网站的浏览时长占比
+        var pieData = [
+            {% for url, (total_duration, total_visits) in top_five %}
+                { value: {{ total_duration | tojson }}, name: '{{ url }}' },
+            {% endfor %}
+        ];
+
+        var total_duration_top_five = 0;
+        pieData.forEach(function(item) {
+            total_duration_top_five += item.value;
+        });
+
+        pieData.forEach(function(item) {
+            item.value = ((item.value / total_duration_top_five) * 100).toFixed(2);
+        });
+
+        var pieOption = {
+            title: {
+                text: '浏览时长占比',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'item',
+                formatter: '{a} <br/>{b} : {c}%'
+            },
+            legend: {
+                show:false,
+                orient: 'vertical',
+                left: 'left',
+                data: pieData.map(function(item) {
+                    return item.name;
+                })
+            },
+            series: [
+                {
+                    name: '占比',
+                    type: 'pie',
+                    radius: '55%',
+                    center: ['50%', '60%'],
+                    data: pieData,
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }
+            ]
+        };
+        pieChart.setOption(pieOption);
+
+        // 初始化第二个饼图
+        var pieChart2 = echarts.init(document.getElementById('pie_chart_2'));
+
+        // 计算前五网站的浏览次数占比
+        var pieData2 = [
+            {% for url, (total_duration, total_visits) in top_five %}
+                { value: {{ total_visits | tojson }}, name: '{{ url }}' },
+            {% endfor %}
+        ];
+
+        var total_visits_top_five = 0;
+        pieData2.forEach(function(item) {
+            total_visits_top_five += item.value;
+        });
+
+        pieData2.forEach(function(item) {
+            item.value = ((item.value / total_visits_top_five) * 100).toFixed(2);
+        });
+
+        var pieOption2 = {
+            title: {
+                text: '浏览次数占比',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'item',
+                formatter: '{a} <br/>{b} : {c}%'
+            },
+            legend: {
+                show: false,
+                orient: 'vertical',
+                left: 'left',
+                data: pieData2.map(function(item) {
+                    return item.name;
+                })
+            },
+            series: [
+                {
+                    name: '占比',
+                    type: 'pie',
+                    radius: '55%',
+                    center: ['50%', '60%'],
+                    data: pieData2,
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }
+            ]
+        };
+        pieChart2.setOption(pieOption2);
+    </script>
+</body>
+</html>
